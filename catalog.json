@@ -5,8 +5,8 @@
   "sources": [
     {
       "kind": "dockside",
-      "digest": "96bfbc49391cd74526ae343864e5e5e66fe05fbf4d88cb36237ec15d8cbeac77",
-      "count": 1
+      "digest": "2580fdcd4dc50aa1230f3121ed3e8c9dcde6b42654528453dd69e6487dc85de2",
+      "count": 2
     }
   ],
   "templates": [
@@ -79,6 +79,333 @@
             "exclude_globs": [
               "logs/",
               "*.log"
+            ],
+            "retention_days": 14
+          },
+          "resource_defaults": {
+            "cpu_limit_millicores": null,
+            "memory_limit_mb": null,
+            "disk_alert_limit_mb": null
+          }
+        }
+      },
+      "canonical_document": {},
+      "compatibility_report": {
+        "compatible": true,
+        "warnings": []
+      }
+    },
+    {
+      "slug": "dockside-steam-palworld",
+      "name": "Palworld",
+      "category": "Steam",
+      "source_kind": "dockside",
+      "upstream_url": "https://docs.palworldgame.com/getting-started/deploy-dedicated-server/",
+      "author": "Dockside.GG contributors",
+      "description": "SteamCMD-based Palworld dedicated server with cross-play configuration and localhost-only REST API management.",
+      "source_digest": "80207339312ab0a6013e19e1d34d4a6f874d51b722b006652cf4473ee6f1f2f5",
+      "source_document": {
+        "_comment": "Dockside.GG native Palworld dedicated server template",
+        "meta": {
+          "version": "DOCKSIDE_v1"
+        },
+        "name": "Palworld",
+        "author": "Dockside.GG contributors",
+        "description": "SteamCMD-based Palworld dedicated server with cross-play configuration and localhost-only REST API management.",
+        "features": [
+          "steam_disk_space"
+        ],
+        "file_denylist": [
+          "PalServer.sh"
+        ],
+        "docker_images": {
+          "SteamCMD Debian": "ghcr.io/parkervcp/steamcmd:debian"
+        },
+        "startup": "if [ \"{{AUTO_UPDATE}}\" = \"1\" ]; then ./steamcmd/steamcmd.sh +force_install_dir /home/container +login anonymous +app_update {{SRCDS_APPID}} validate +quit; fi; ./PalworldServerConfigParser; exec /home/container/Pal/Binaries/Linux/PalServer-Linux-Shipping Pal -publiclobby -enable-gamedata-api -port={{SERVER_PORT}} -publicport={{SERVER_PORT}} -servername=\"{{SERVER_NAME}}\" -players={{MAX_PLAYERS}} $(if [ -n \"$SERVER_PASSWORD\" ]; then printf '%s' \"-serverpassword=$SERVER_PASSWORD\"; fi) -adminpassword=\"{{ADMIN_PASSWORD}}\"",
+        "config": {
+          "stop": "shutdown 15"
+        },
+        "scripts": {
+          "installation": {
+            "container": "ghcr.io/parkervcp/installers:debian",
+            "entrypoint": "bash",
+            "script": "#!/bin/bash\nset -euo pipefail\n\nserver_dir=/mnt/server\nsteamcmd_dir=\"${server_dir}/steamcmd\"\nconfig_dir=\"${server_dir}/Pal/Saved/Config/LinuxServer\"\n\nmkdir -p \"${steamcmd_dir}\" \"${server_dir}/steamapps\"\ncurl --fail --location --silent --show-error https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \\\n  | tar -xz -C \"${steamcmd_dir}\"\n\nexport HOME=\"${server_dir}\"\ncd \"${steamcmd_dir}\"\n./steamcmd.sh +force_install_dir \"${server_dir}\" +login anonymous +app_update 2394010 validate +quit\n\nmkdir -p \"${server_dir}/.steam/sdk32\" \"${server_dir}/.steam/sdk64\"\ncp -f linux32/steamclient.so \"${server_dir}/.steam/sdk32/steamclient.so\"\ncp -f linux64/steamclient.so \"${server_dir}/.steam/sdk64/steamclient.so\"\n\nmkdir -p \"${config_dir}\"\nif [ ! -f \"${config_dir}/PalWorldSettings.ini\" ]; then\n  cp \"${server_dir}/DefaultPalWorldSettings.ini\" \"${config_dir}/PalWorldSettings.ini\"\nfi\n\ncurl --fail --location --silent --show-error \\\n  --output \"${server_dir}/PalworldServerConfigParser\" \\\n  https://github.com/pelican-eggs/Palworld-Config-Parser-Tool/releases/latest/download/PalworldServerConfigParser-linux-amd64\nchmod +x \"${server_dir}/PalworldServerConfigParser\"\n\nprintf 'Palworld dedicated server installation completed.\\n'"
+          }
+        },
+        "variables": [
+          {
+            "name": "Steam App ID",
+            "description": "Palworld Dedicated Server Steam application ID. Do not edit.",
+            "env_variable": "SRCDS_APPID",
+            "default_value": "2394010",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|in:2394010",
+            "field_type": "text",
+            "secret": false
+          },
+          {
+            "name": "Auto Update",
+            "description": "Update and validate the server through SteamCMD before each start.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "boolean",
+            "secret": false
+          },
+          {
+            "name": "Maximum Players",
+            "description": "Maximum number of concurrent players.",
+            "env_variable": "MAX_PLAYERS",
+            "default_value": "32",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|numeric|between:1,32",
+            "field_type": "number",
+            "secret": false
+          },
+          {
+            "name": "Admin Password",
+            "description": "Required for Palworld administration and Dockside REST API commands.",
+            "env_variable": "ADMIN_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|between:1,30",
+            "field_type": "password",
+            "secret": true
+          },
+          {
+            "name": "Public IP",
+            "description": "Optional public IP override for community server registration. Leave blank for automatic detection.",
+            "env_variable": "PUBLIC_IP",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|ip",
+            "field_type": "text",
+            "secret": false
+          },
+          {
+            "name": "Server Name",
+            "description": "Name displayed in the Palworld server browser.",
+            "env_variable": "SERVER_NAME",
+            "default_value": "A DOCKSIDE.GG Panel Server",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:64",
+            "field_type": "text",
+            "secret": false
+          },
+          {
+            "name": "Server Password",
+            "description": "Optional password players must enter to join.",
+            "env_variable": "SERVER_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|between:1,30",
+            "field_type": "password",
+            "secret": true
+          },
+          {
+            "name": "REST API Port",
+            "description": "Internal-only Palworld administration API port used by Dockside.",
+            "env_variable": "REST_API_PORT",
+            "default_value": "8212",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|numeric|between:1,65535",
+            "field_type": "number",
+            "secret": false
+          },
+          {
+            "name": "Enable REST API",
+            "description": "Required for Dockside console commands.",
+            "env_variable": "REST_API_ENABLED",
+            "default_value": "True",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|in:True",
+            "field_type": "boolean",
+            "secret": false
+          },
+          {
+            "name": "Server Description",
+            "description": "Description displayed for the server.",
+            "env_variable": "SERVER_DESCRIPTION",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:128",
+            "field_type": "text",
+            "secret": false
+          },
+          {
+            "name": "Cross-play Platforms",
+            "description": "Comma-separated platforms allowed to connect: Steam, Xbox, PS5, and Mac.",
+            "env_variable": "CROSSPLAY_PLATFORMS",
+            "default_value": "Steam,Xbox,PS5,Mac",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text",
+            "secret": false
+          }
+        ],
+        "dockside": {
+          "network_ports": [
+            {
+              "name": "Game",
+              "purpose": "Primary Palworld game traffic",
+              "container_port": 8211,
+              "protocol": "udp",
+              "primary": true,
+              "required": true,
+              "published": true,
+              "internal_only": false,
+              "environment": "SERVER_PORT"
+            },
+            {
+              "name": "REST API",
+              "purpose": "Local Palworld administration API used by Dockside command transport",
+              "container_port": 8212,
+              "protocol": "tcp",
+              "primary": false,
+              "required": false,
+              "published": false,
+              "internal_only": true,
+              "environment": "REST_API_PORT"
+            }
+          ],
+          "command_transport": {
+            "type": "http_rest",
+            "rest": {
+              "port_environment": "REST_API_PORT",
+              "headers": {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+              },
+              "accepted_status": [
+                200
+              ],
+              "timeout_seconds": 10,
+              "basic_auth": {
+                "username": "admin",
+                "password_environment": "ADMIN_PASSWORD"
+              },
+              "routes": [
+                {
+                  "command": "info",
+                  "aliases": [
+                    "serverinfo"
+                  ],
+                  "usage": "info",
+                  "method": "GET",
+                  "path": "/v1/api/info"
+                },
+                {
+                  "command": "players",
+                  "aliases": [
+                    "playerlist",
+                    "showplayers"
+                  ],
+                  "usage": "players",
+                  "method": "GET",
+                  "path": "/v1/api/players"
+                },
+                {
+                  "command": "settings",
+                  "usage": "settings",
+                  "method": "GET",
+                  "path": "/v1/api/settings"
+                },
+                {
+                  "command": "announce",
+                  "aliases": [
+                    "broadcast"
+                  ],
+                  "usage": "announce <message>",
+                  "min_args": 1,
+                  "method": "POST",
+                  "path": "/v1/api/announce",
+                  "body_template": "{\"message\":{{ARGS_JSON}}}"
+                },
+                {
+                  "command": "kick",
+                  "usage": "kick <userid> [message]",
+                  "min_args": 1,
+                  "method": "POST",
+                  "path": "/v1/api/kick",
+                  "body_template": "{\"userid\":{{ARG1_JSON}},\"message\":{{ARGS_AFTER_1_JSON}}}"
+                },
+                {
+                  "command": "ban",
+                  "usage": "ban <userid> [message]",
+                  "min_args": 1,
+                  "method": "POST",
+                  "path": "/v1/api/ban",
+                  "body_template": "{\"userid\":{{ARG1_JSON}},\"message\":{{ARGS_AFTER_1_JSON}}}"
+                },
+                {
+                  "command": "unban",
+                  "usage": "unban <userid>",
+                  "min_args": 1,
+                  "method": "POST",
+                  "path": "/v1/api/unban",
+                  "body_template": "{\"userid\":{{ARG1_JSON}}}"
+                },
+                {
+                  "command": "save",
+                  "usage": "save",
+                  "method": "POST",
+                  "path": "/v1/api/save"
+                },
+                {
+                  "command": "shutdown",
+                  "usage": "shutdown <seconds> [message]",
+                  "min_args": 1,
+                  "method": "POST",
+                  "path": "/v1/api/shutdown",
+                  "body_template": "{\"waittime\":{{ARG1_INT}},\"message\":{{ARGS_AFTER_1_JSON}}}"
+                },
+                {
+                  "command": "stop",
+                  "aliases": [
+                    "forcestop"
+                  ],
+                  "usage": "stop",
+                  "method": "POST",
+                  "path": "/v1/api/stop"
+                },
+                {
+                  "command": "game-data",
+                  "aliases": [
+                    "gamedata"
+                  ],
+                  "usage": "game-data",
+                  "method": "GET",
+                  "path": "/v1/api/game-data"
+                },
+                {
+                  "command": "metrics",
+                  "usage": "metrics",
+                  "method": "GET",
+                  "path": "/v1/api/metrics"
+                }
+              ]
+            }
+          },
+          "backup_defaults": {
+            "include_paths": [
+              "Pal/Saved/"
+            ],
+            "exclude_globs": [
+              "Pal/Saved/Logs/**",
+              "Pal/Saved/Crashes/**",
+              "Pal/Saved/SaveGames/backup/**"
             ],
             "retention_days": 14
           },
