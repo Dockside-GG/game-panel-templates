@@ -1,17 +1,19 @@
-# Contributing templates
+# Contributing
 
-Use the panel's visual template editor whenever practical, test the resulting
-server, and choose **Export Dockside JSON** from the template detail page.
+Contributions must be original Dockside-native definitions and must not include
+copied proprietary scripts, credentials, private data, or incompatible catalog
+entries.
 
-Before submitting a definition, verify:
+Before opening a pull request:
 
-- installation from an empty server volume;
-- first start, graceful stop, restart, kill, and unexpected-stop recovery;
-- every published TCP and UDP allocation from a second machine;
-- stdin, RCON, or HTTP REST commands as declared by the template;
-- a backup and restore using the declared default include/exclude rules;
-- a second server on the same host without port collisions;
-- blank resource limits remain unlimited.
+1. Test install, first start, graceful stop, restart, command transport, backup,
+   restore, and a second concurrent server.
+2. Confirm every published port and protocol from a separate client.
+3. Keep resource defaults blank/unlimited unless the server has a documented
+   hard minimum.
+4. Mark management endpoints `internal_only` unless external access is required.
+5. Add useful file-selection backup defaults.
+6. Run `npm run check` and commit the regenerated `catalog.json`.
 
-Do not submit secrets or user-specific values. Defaults suggesting a password,
-token, API key, or webhook must be blank and marked secret.
+Describe the host OS, architecture, game/server version, Docker image, test
+steps, and results in the pull request. Never paste live secrets or webhook URLs.

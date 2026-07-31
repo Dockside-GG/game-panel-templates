@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dockside.gg/schemas/game-panel-template-v1.json",
+  "title": "Dockside Game Panel template v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "name",
+    "docker_images",
+    "startup",
+    "scripts",
+    "variables",
+    "dockside"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "author": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "docker_images": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "startup": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32768
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "stop": {
+          "type": "string",
+          "maxLength": 2048
+        }
+      }
+    },
+    "scripts": {
+      "type": "object",
+      "required": [
+        "installation"
+      ],
+      "properties": {
+        "installation": {
+          "type": "object",
+          "required": [
+            "container",
+            "entrypoint",
+            "script"
+          ],
+          "properties": {
+            "container": {
+              "type": "string",
+              "minLength": 1
+            },
+            "entrypoint": {
+              "enum": [
+                "sh",
+                "ash",
+                "bash"
+              ]
+            },
+            "script": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/variable"
+      }
+    },
+    "dockside": {
+      "type": "object",
+      "required": [
+        "network_ports",
+        "command_transport"
+      ],
+      "properties": {
+        "network_ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/networkPort"
+          }
+        },
+        "command_transport": {
+          "$ref": "#/$defs/commandTransport"
+        },
+        "backup_defaults": {
+          "$ref": "#/$defs/backupDefaults"
+        },
+        "resource_defaults": {
+          "$ref": "#/$defs/resourceDefaults"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "environmentName": {
+      "type": "string",
+      "pattern": "^[A-Z_][A-Z0-9_]{0,127}$"
+    },
+    "variable": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "env_variable",
+        "default_value",
+        "user_viewable",
+        "user_editable"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "env_variable": {
+          "$ref": "#/$defs/environmentName"
+        },
+        "default_value": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "user_viewable": {
+          "type": "boolean"
+        },
+        "user_editable": {
+          "type": "boolean"
+        },
+        "field_type": {
+          "enum": [
+            "text",
+            "number",
+            "boolean",
+            "password",
+            "select"
+          ]
+        },
+        "secret": {
+          "type": "boolean"
+        }
+      }
+    },
+    "networkPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "container_port",
+        "protocol",
+        "primary",
+        "required",
+        "published",
+        "internal_only"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "container_port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "protocol": {
+          "enum": [
+            "tcp",
+            "udp"
+          ]
+        },
+        "primary": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "published": {
+          "type": "boolean"
+        },
+        "internal_only": {
+          "type": "boolean"
+        },
+        "environment": {
+          "$ref": "#/$defs/environmentName"
+        }
+      }
+    },
+    "commandTransport": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "auto",
+            "stdin",
+            "rcon",
+            "http_rest",
+            "disabled"
+          ]
+        },
+        "rcon_port_env": {
+          "$ref": "#/$defs/environmentName"
+        },
+        "rcon_password_env": {
+          "$ref": "#/$defs/environmentName"
+        },
+        "rest": {
+          "type": "object",
+          "properties": {
+            "method": {
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE"
+              ]
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "port_environment": {
+              "$ref": "#/$defs/environmentName"
+            },
+            "path": {
+              "type": "string",
+              "pattern": "^/"
+            },
+            "timeout_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "accepted_status": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "uniqueItems": true
+            },
+            "routes": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "required": [
+                  "command",
+                  "method",
+                  "path"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "backupDefaults": {
+      "type": "object",
+      "properties": {
+        "include_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100
+        },
+        "exclude_globs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100
+        },
+        "retention_days": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 3650
+        }
+      }
+    },
+    "resourceDefaults": {
+      "type": "object",
+      "properties": {
+        "cpu_limit_millicores": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "memory_limit_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "disk_alert_limit_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

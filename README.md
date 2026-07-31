@@ -1,42 +1,81 @@
-# Dockside.GG game-panel templates
+# Dockside Game Panel Templates
 
-This public repository is the authoritative template catalog consumed by
-[Dockside.GG Game Panel](https://github.com/Dockside-GG/game-panel).
+This repository is the public, Dockside-native template catalog consumed by
+Dockside Game Panel installations. It must contain only original Dockside
+templates. Pelican- and Pterodactyl-compatible definitions remain supported by
+the panel, but do not belong in this catalog.
 
-`catalog.json` contains the versioned, validated catalog. The panel downloads
-this file directly, checks its schema and every normalized definition, then
-atomically replaces the catalog-managed templates in PostgreSQL. Locally
-created Dockside templates are never overwritten.
+## Repository layout
 
-## Catalog releases
+```text
+.
+|-- catalog.json
+|-- schemas/
+|   `-- dockside-template-v1.schema.json
+|-- scripts/
+|   |-- build-catalog.mjs
+|   `-- validate.mjs
+`-- templates/
+    `-- example-dedicated-server/
+        |-- manifest.json
+        |-- README.md
+        `-- template.json
+```
 
-The `catalog_version` property follows [Semantic Versioning](https://semver.org/):
+Each template owns a directory containing:
 
-- Patch: description, metadata, or compatible template fixes.
-- Minor: new templates or backward-compatible Dockside extension fields.
-- Major: an incompatible catalog or template contract.
+- `template.json`: the portable Dockside template definition.
+- `manifest.json`: catalog metadata, including its category and optional source
+  URL.
+- `README.md`: game-specific install, networking, test, and maintenance notes.
 
-Every catalog update must also set a current RFC 3339 `generated_at` value.
+Do not commit credentials, tokens, webhook URLs, private game files, proprietary
+server binaries, or generated backups.
 
-## Contributing
+## Add a template
 
-1. Fork this repository and create a branch.
-2. Export a Dockside JSON definition from the panel or add a compatible
-   definition to the catalog.
-3. Never include game-server passwords, tokens, webhook URLs, personal data, or
-   other secrets.
-4. Increment `catalog_version` and update `generated_at`.
-5. Run `node scripts/validate-catalog.mjs`.
-6. Open a pull request describing the game, tested image, ports, installation,
-   startup, console transport, backup paths, and test results.
+1. Copy `templates/example-dedicated-server`.
+2. Rename the directory for the game/server software.
+3. Edit `manifest.json`, `template.json`, and the template README.
+4. Run `npm run validate`.
+5. Run `npm run build`.
+6. Commit the template and regenerated `catalog.json` together.
 
-Pelican-compatible and Pterodactyl-compatible definitions are accepted. Once a
-definition is customized or authored in the panel, its exported source is a
-Dockside template with explicit networking, resource, backup, and command
-transport extensions.
+`catalog.json` is deterministic except for `generated_at`. The build script uses
+`SOURCE_DATE_EPOCH` when supplied by CI; otherwise it uses the current time.
+
+## Versions
+
+The repository and generated catalog use Semantic Versioning:
+
+- Patch: documentation, validation, or compatible template corrections.
+- Minor: new templates or backward-compatible properties.
+- Major: a breaking catalog or template contract change.
+
+Set `CATALOG_VERSION` when building a release:
+
+```bash
+CATALOG_VERSION=0.2.0 npm run build
+```
+
+PowerShell:
+
+```powershell
+$env:CATALOG_VERSION = "0.2.0"
+npm run build
+```
+
+## Validation contract
+
+The repository scripts intentionally use only Node.js built-ins. They validate
+repository structure, JSON syntax, required properties, template names, images,
+startup commands, network policies, command transports, backup defaults,
+resource defaults, secret defaults, unique slugs, and the generated catalog.
+
+The panel performs authoritative normalization and validation again before it
+accepts a catalog. A catalog update is atomic: one invalid template rejects the
+entire update while locally stored and bundled templates remain available.
 
 ## License
 
-Repository tooling and original Dockside metadata are licensed under
-Apache-2.0. Individual compatible definitions and referenced container images
-may retain their own authorship and license metadata.
+Apache License 2.0. See `LICENSE`.

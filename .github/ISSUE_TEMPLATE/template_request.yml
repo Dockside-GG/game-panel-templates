@@ -1,0 +1,34 @@
+name: Template request
+description: Request a new original Dockside game server template
+title: "[Template request]: "
+labels:
+  - template
+  - enhancement
+body:
+  - type: input
+    id: software
+    attributes:
+      label: Game or server software
+    validations:
+      required: true
+  - type: input
+    id: official
+    attributes:
+      label: Official server/download page
+      description: Do not link to Pelican or Pterodactyl documentation.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Installation and networking details
+      description: Include supported OS/architecture, ports/protocols, command interface, and save/config paths.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I did not include credentials, webhook URLs, private server files, or personal information.
+          required: true
